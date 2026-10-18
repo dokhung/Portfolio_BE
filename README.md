@@ -4,8 +4,43 @@ Spring Boot 4.1.1 / Java 17 / Gradleを使用した、API開発の準備用プ�
 
 - Spring MVC、Validation、Spring Data JPA、PostgreSQLドライバーを導入済みです。
 - 基本URLは `http://<ホスト名>:<BACKEND_PORT>/api` です。
-- コントローラー、サービス、エンティティ、リポジトリ、業務用テーブルはまだ作成していません。
+- 作品ごとに実装する場所を用意しています。コントローラー、サービス、エンティティ、リポジトリ、業務用テーブルはまだ実装していません。
 - JPAはスキーマの検証のみを行います。テーブルの作成・変更やSQLによる自動初期化は行いません。
+
+## 共通基盤と作品ごとの構成
+
+複数の作品を1つのSpring BootアプリケーションとDBで動かす構成です。全体で使う設定を `common/` に、作品固有の処理を `projects/<作品名>/` に分けます。各作品の中をコントローラー・サービスなどの役割ごとに整理します。
+
+```text
+src/main/java/com/webportfolio/backend/
+├── BackendApplication.java
+├── common/
+│   └── config/
+│       └── WebConfig.java
+└── projects/
+    └── todo/
+        ├── controller/
+        ├── service/
+        ├── repository/
+        ├── entity/
+        └── dto/
+```
+
+| 配置先 | 役割 |
+| --- | --- |
+| `BackendApplication.java` | アプリケーションの起動。共通基盤と全作品のパッケージを検出します。 |
+| `common/config` | CORSなど、アプリケーション全体で使う設定 |
+| `projects/todo/controller` | ToDoのHTTPリクエストとレスポンス |
+| `projects/todo/service` | ToDoの業務処理 |
+| `projects/todo/repository` | ToDoのDBアクセス |
+| `projects/todo/entity` | ToDoの永続化モデル |
+| `projects/todo/dto` | ToDoのリクエスト・レスポンス用データ |
+
+`projects/todo` は、フロントエンドの `src/projects/todo-list/` に対応するバックエンドの実装先です。各役割のフォルダーには説明用の `package-info.java` のみを配置しており、APIやDBモデルは追加していません。
+
+作品を追加するときは、`projects/` の直下にJavaのパッケージ名として使える小文字の作品名を付け、必要な役割のパッケージをその中に作成してください。作品固有のクラスは、その作品の配下にまとめます。複数の作品で実際に共有する設定や処理は `common/` に配置します。
+
+既存のアプリケーション起動・DB接続テストは `src/test/java/com/webportfolio/backend/` に置いています。今後追加する作品のテストも、たとえば `src/test/java/com/webportfolio/backend/projects/todo/service/` のように、実装と対応するパッケージへ配置してください。
 
 ## 起動
 
@@ -68,7 +103,7 @@ DBのデータは名前付きボリュームに保存します。`.env` のDB名
 
 フロントエンドは別のリポジトリとして管理できます。フロントエンド側の `.env` にある `BACKEND_HOST`・`BACKEND_PORT` を、このバックエンドの接続先に合わせて設定してください。両方のリポジトリで設定ファイルを共有する必要はありません。
 
-バックエンドのコンテキストパスは `/api` です。今後、`com.webportfolio.backend` 配下にコントローラーを作成して `/projects` にマッピングすると、最終的なURLは `/api/projects` になります。このAPIは現在実装されていません。
+バックエンドのコンテキストパスは `/api` です。今後の例として、`com.webportfolio.backend.projects.todo.controller` にコントローラーを作成して `/todo/tasks` にマッピングすると、最終的なURLは `/api/todo/tasks` になります。作品ごとのパスを使用してAPIを分けます。このAPIは現在実装されていません。
 
 CORSで許可するオリジンは、このフォルダーの `.env` の `CORS_ALLOWED_ORIGINS` にカンマ区切りで設定します。フロントエンドのポートを変更した場合は、この値も合わせて変更してください。Cookieを使用する認証やログインの設定は追加していません。
 
