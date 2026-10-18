@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# ローカル環境・ログ
+.DS_Store
+logs/
+*.log
+
 HELP.md
 .gradle
 build/
